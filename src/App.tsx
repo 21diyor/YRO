@@ -1,0 +1,107 @@
+import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Navbar } from './components/Navbar';
+import { SidebarProfileSection, SubscribeBlock } from './components/SidebarProfileSection';
+import { Hero } from './components/Hero';
+import { PostListSection } from './components/PostListSection';
+import { type FilterTab } from './data';
+import { ChevronRight } from 'lucide-react';
+import { usePublishedPosts } from './lib/posts';
+
+export default function App() {
+  const [filter, setFilter] = useState<FilterTab>('latest');
+  const location = useLocation();
+  const { posts, loading } = usePublishedPosts();
+  const recommendations = [
+    { title: "Uzbekistan Startup Ecosystem", author: "YRO Research", icon: "🚀" },
+    { title: "Higher Education Trends", author: "YRO Research", icon: "🎓" },
+    { title: "Labor Market Analysis", author: "YRO Research", icon: "📊" }
+  ];
+
+  return (
+    <div className="min-h-screen flex flex-col font-sans">
+      <Navbar />
+      
+      <main className="flex-grow">
+        <Hero posts={posts} />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16">
+            {/* Main Content */}
+            <div className="lg:col-span-8">
+              <PostListSection
+                filter={filter}
+                onFilterChange={setFilter}
+                excludeFeatured={true}
+                showAll={false}
+                posts={posts}
+              />
+
+              <Link
+                to="/archive"
+                className="mt-8 inline-flex items-center gap-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded transition-colors"
+              >
+                See all <ChevronRight size={16} />
+              </Link>
+            </div>
+            
+            {/* Sidebar */}
+            <aside className="lg:col-span-4">
+              <div className="sticky top-24 space-y-12">
+                <SidebarProfileSection fromPath={location.pathname} />
+                
+                {/* Recommendations */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Recommendations</h3>
+                    <Link to="/archive" className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black">
+                      View all 22
+                    </Link>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {recommendations.map((rec, i) => (
+                      <Link
+                        key={i}
+                        to="/archive"
+                        className="flex items-center gap-3 group cursor-pointer"
+                      >
+                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-lg">
+                          {rec.icon}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold group-hover:underline">{rec.title}</h4>
+                          <p className="text-xs text-gray-500">{rec.author}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </main>
+      
+      <footer className="bg-white border-t border-gray-100 py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-md mb-12">
+            <img src="/Logo.png" alt="Youth Research Office" className="h-12 w-auto object-contain mb-4" />
+            <h2 className="text-lg font-bold mb-2">Youth Research Office</h2>
+            <p className="text-sm text-gray-600 leading-relaxed mb-6">
+              Insights for policymakers and entrepreneurs creating the future of Uzbekistan.
+            </p>
+            <SubscribeBlock fromPath={location.pathname} />
+          </div>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm font-medium text-gray-600">
+            <Link to="/about" className="hover:text-black">About</Link>
+            <Link to="/archive" className="hover:text-black">Archive</Link>
+            <Link to="/archive" className="hover:text-black">Recommendations</Link>
+            <Link to="/archive" className="hover:text-black">Sitemap</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

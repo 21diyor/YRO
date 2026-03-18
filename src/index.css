@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Georgia", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --color-accent: #a39289;
+  --color-accent-hover: #8e7d74;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-[#1a1a1a] antialiased;
+  }
+}
+
+@layer utilities {
+  .halftone-bg {
+    background-image: radial-gradient(#1a1a1a 1px, transparent 0);
+    background-size: 20px 20px;
+    opacity: 0.05;
+  }
+}
