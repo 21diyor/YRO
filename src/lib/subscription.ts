@@ -3,6 +3,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient";
 
+const LOCAL_SUBSCRIBED_KEY = "yro-subscribed";
+function getLocalSubscribed() {
+  try {
+    return localStorage.getItem(LOCAL_SUBSCRIBED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 export function useSubscriptionStatus() {
   const { configured, user } = useAuth();
   const [subscribed, setSubscribed] = React.useState(false);
@@ -11,8 +20,9 @@ export function useSubscriptionStatus() {
 
   React.useEffect(() => {
     const run = async () => {
+      // Local fallback when Supabase isn't configured (e.g. missing env vars in production).
       if (!configured || !isSupabaseConfigured || !supabase) {
-        setSubscribed(false);
+        setSubscribed(getLocalSubscribed());
         setLoading(false);
         setError(null);
         return;
@@ -49,7 +59,7 @@ export function useSubscriptionStatus() {
 export function useRequireSubscription() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { subscribed, loading } = useSubscriptionStatus();
+  const { subscribed, loading, configured } = useSubscriptionStatus();
 
   return React.useCallback(
     (fn?: () => void) => {
@@ -59,10 +69,12 @@ export function useRequireSubscription() {
         fn?.();
         return true;
       }
-      navigate("/subscribe", { state: { from: pathname } });
+      // When Supabase isn't configured, we still allow local subscribe flow to work,
+      // but if the user isn't subscribed yet, route them to /subscribe.
+      navigate("/subscribe", { state: { from: pathname, mode: configured ? "db" : "local" } });
       return false;
     },
-    [loading, navigate, pathname, subscribed],
+    [configured, loading, navigate, pathname, subscribed],
   );
 }
 
