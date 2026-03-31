@@ -2,7 +2,7 @@ import React from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
 import { Navbar } from "@/components/Navbar"
 import { useAuth } from "@/providers/AuthProvider"
-import { isSupabaseConfigured, supabase } from "@/lib/supabaseClient"
+import { getStorageCoverUrl, isSupabaseConfigured, supabase } from "@/lib/supabaseClient"
 
 type PostRow = {
   id: string
@@ -174,6 +174,10 @@ export function AdminPostEditor() {
     update({ cover_image_url: data.publicUrl })
   }
 
+  const setDefaultCover = (n: 1 | 2 | 3 | 4) => {
+    update({ cover_image_url: getStorageCoverUrl(`${n}.png`) })
+  }
+
   const deletePost = async () => {
     if (!supabase || !post) return
     if (!window.confirm(`Delete "${post.title}"? This cannot be undone.`)) return
@@ -314,6 +318,28 @@ export function AdminPostEditor() {
                     onChange={uploadCoverImage}
                   />
                 </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500">Set default cover</span>
+                  <select
+                    className="rounded-md border border-gray-200 px-2 py-2 text-sm bg-white focus:outline-none focus:border-gray-400"
+                    value=""
+                    onChange={(e) => {
+                      const v = e.target.value
+                      e.target.value = ""
+                      if (v === "1" || v === "2" || v === "3" || v === "4") {
+                        setDefaultCover(parseInt(v, 10) as 1 | 2 | 3 | 4)
+                      }
+                    }}
+                  >
+                    <option value="" disabled>
+                      Choose…
+                    </option>
+                    <option value="1">1.png</option>
+                    <option value="2">2.png</option>
+                    <option value="3">3.png</option>
+                    <option value="4">4.png</option>
+                  </select>
+                </div>
                 <span className="text-xs text-gray-500">or paste URL below (max 5 MB)</span>
               </div>
               <input

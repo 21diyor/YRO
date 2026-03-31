@@ -15,7 +15,7 @@ export const supabase = isSupabaseConfigured
     })
   : null
 
-/** Public URL for a cover image in Storage (post-images/covers/). Use when Supabase is configured so all visitors can see images. */
+/** Public URL for a cover image in Storage (bucket post-images, folder covers/). Matches Dashboard path: post-images → covers → 1.png … 4.png */
 export function getStorageCoverUrl(filename: string): string {
   const base = import.meta.env.VITE_SUPABASE_URL as string | undefined
   if (base) return `${base}/storage/v1/object/public/post-images/covers/${filename}`

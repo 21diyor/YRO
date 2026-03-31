@@ -1,9 +1,10 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/providers/AuthProvider";
 import { supabase, isSupabaseConfigured } from "@/lib/supabaseClient";
 import { isDbPostId } from "@/lib/engagement";
 import type { CommentRow } from "@/lib/engagement";
+import { useSubscriptionStatus } from "@/lib/subscription";
 
 interface CommentSectionProps {
   postId: string;
@@ -14,11 +15,14 @@ interface CommentSectionProps {
 
 export function CommentSection({ postId, comments, loading, onRefetch }: CommentSectionProps) {
   const { user } = useAuth();
+  const { subscribed } = useSubscriptionStatus();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [body, setBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const canComment = isSupabaseConfigured && supabase && user && isDbPostId(postId);
+  const canComment = isSupabaseConfigured && supabase && user && subscribed && isDbPostId(postId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,13 +78,23 @@ export function CommentSection({ postId, comments, loading, onRefetch }: Comment
         </form>
       )}
 
-      {isDb && !user && isSupabaseConfigured && (
+      {isDb && (!user || !subscribed) && isSupabaseConfigured && (
         <p className="text-sm text-gray-500 mb-6 rounded-lg bg-gray-50 px-4 py-3">
           <Link to="/subscribe" className="text-accent hover:underline font-medium">
-            Sign in
+            Subscribe / sign in
           </Link>{" "}
           to comment.
         </p>
+      )}
+
+      {isDb && user && !subscribed && isSupabaseConfigured && (
+        <button
+          type="button"
+          onClick={() => navigate("/subscribe", { state: { from: pathname } })}
+          className="mb-6 inline-flex items-center justify-center px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover transition-colors"
+        >
+          Subscribe to comment
+        </button>
       )}
 
       {isDb && (loading ? (

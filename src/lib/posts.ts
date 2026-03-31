@@ -19,6 +19,30 @@ function formatMonthYear(iso: string | null): string {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(d)
 }
 
+/** When DB has no cover_image_url, pick deterministic Storage covers (covers/1.png … 4.png). */
+function coverImageForDbPost(row: Pick<DbPostRow, "title" | "category" | "cover_image_url">): string {
+  const title = row.title
+  const coverImageUrl = row.cover_image_url
+  const url = coverImageUrl?.trim()
+  if (url) return url
+
+  const t = title.toLowerCase()
+  const c = (row.category ?? "").trim().toLowerCase()
+  if (c === "labor market") {
+    return getStorageCoverUrl("4.png")
+  }
+  if (t === "top 10 universities by average gpa") {
+    return getStorageCoverUrl("3.png")
+  }
+  if (c === "startups") {
+    return getStorageCoverUrl("2.png")
+  }
+  if (t === "women surpass men in higher education enrollment") {
+    return getStorageCoverUrl("1.png")
+  }
+  return getStorageCoverUrl("1.png")
+}
+
 function mapDbPostToUi(row: DbPostRow): Post {
   return {
     id: row.id,
@@ -27,7 +51,7 @@ function mapDbPostToUi(row: DbPostRow): Post {
     category: row.category ?? "Research",
     summary: row.summary,
     content: row.content,
-    image: row.cover_image_url ?? getStorageCoverUrl("1.png"),
+    image: coverImageForDbPost(row),
   }
 }
 
