@@ -8,6 +8,7 @@ import { PostImage } from '../components/PostImage';
 import { Heart, MessageSquare, Share2, Lightbulb, ArrowLeft } from 'lucide-react';
 import { usePostById, usePublishedPosts } from '../lib/posts';
 import { usePostLikes, usePostComments, useShareCount, isDbPostId } from '../lib/engagement';
+import { useRequireSubscription } from '../lib/subscription';
 
 const SUBSCRIBE_MODAL_KEY = 'yro-subscribe-modal-dismissed-date';
 
@@ -33,10 +34,16 @@ export const PostDetail = () => {
   const [showSubscribeModal, setShowSubscribeModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [likeMessage, setLikeMessage] = useState<string | null>(null);
+  const [engagementError, setEngagementError] = useState<string | null>(null);
   const hasShownRef = useRef(false);
-  const { likeCount, liked, loading: likeLoading, toggleLike } = usePostLikes(id);
-  const { comments, loading: commentsLoading, refetch: refetchComments } = usePostComments(id);
-  const { shareCount, incrementShare } = useShareCount(id);
+  const { likeCount, liked, loading: likeLoading, error: likeError, toggleLike } = usePostLikes(id);
+  const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = usePostComments(id);
+  const { shareCount, error: shareError, incrementShare } = useShareCount(id);
+  const requireSub = useRequireSubscription();
+
+  useEffect(() => {
+    setEngagementError(likeError ?? shareError ?? commentsError ?? null);
+  }, [likeError, shareError, commentsError]);
 
   useEffect(() => {
     if (!post) return;
@@ -63,12 +70,14 @@ export const PostDetail = () => {
     } catch (_) {}
   };
 
-  const handleShareClick = () => setShowShareModal(true);
+  const handleShareClick = () => requireSub(() => setShowShareModal(true));
   const handleShareCopy = () => void incrementShare();
   const handleShareNative = () => void incrementShare();
 
   const handleLikeClick = async () => {
     setLikeMessage(null);
+    setEngagementError(null);
+    if (!requireSub()) return;
     const result = await toggleLike();
     if (result === "signed_out") {
       setLikeMessage("sign_in");
@@ -169,6 +178,9 @@ export const PostDetail = () => {
               </div>
               <a
                 href="#comments"
+                onClick={(e) => {
+                  if (!requireSub()) e.preventDefault();
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-black transition-colors text-sm"
               >
                 <MessageSquare size={16} />
@@ -183,6 +195,12 @@ export const PostDetail = () => {
                 Share {shareCount > 0 && `(${shareCount})`}
               </button>
             </div>
+
+            {engagementError && (
+              <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {engagementError}
+              </div>
+            )}
           </div>
 
           {/* Featured image - larger so infographics are readable */}

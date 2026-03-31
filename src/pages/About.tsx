@@ -7,6 +7,19 @@ import { Check } from 'lucide-react';
 export const About = () => {
   const subscribed = isSubscribed();
 
+  const coordinators = [
+    "Hasanxon Yusupxo'jayev — Youth Affairs Agency Director’s Advisor",
+    "Diyorbek Ergashev — Chief specialist, Digitalization & AI Implementation department",
+    "Dilshoda Xakimova — Chief specialist, Digitalization & AI Implementation department",
+  ];
+
+  const interns = [
+    "Iriskulov Odilbek — Independent researcher (Intellectual Property Law) at TSUL",
+    "Sardorbek Qodirov — Real Estate Private Equity Intern at Project Destined",
+    "Ma’ruf Fayziyev — Data Analyst",
+    "Sitora Rashidova — Content Writer",
+  ];
+
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <Navbar />
@@ -102,6 +115,35 @@ export const About = () => {
                   alt="Youth Research Office"
                   className="w-16 h-16 rounded-full object-contain shrink-0 border border-gray-200"
                 />
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-12">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Team</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <h3 className="font-bold text-gray-900 text-lg mb-3">Coordinators</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  {coordinators.map((name) => (
+                    <li key={name} className="flex gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" aria-hidden />
+                      <span>{name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <h3 className="font-bold text-gray-900 text-lg mb-3">Interns</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  {interns.map((name) => (
+                    <li key={name} className="flex gap-2">
+                      <span className="mt-2 h-1.5 w-1.5 rounded-full bg-gray-400 shrink-0" aria-hidden />
+                      <span>{name}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           </section>

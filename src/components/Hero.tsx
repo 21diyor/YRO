@@ -8,6 +8,7 @@ import { Globe } from './ui/globe';
 import { BackgroundPaperShaders } from './ui/background-paper-shaders';
 import { PostImage } from './PostImage';
 import { usePostLikes, useShareCount, useCommentCount, isDbPostId } from '../lib/engagement';
+import { useRequireSubscription } from '../lib/subscription';
 
 interface HeroProps {
   posts?: Post[];
@@ -16,9 +17,10 @@ interface HeroProps {
 export const Hero = ({ posts = defaultPosts }: HeroProps) => {
   const featured = posts[0];
   const [localLiked, setLocalLiked] = React.useState(false);
-  const { likeCount, liked: dbLiked, loading: likeLoading, toggleLike } = usePostLikes(featured?.id);
-  const { shareCount, incrementShare } = useShareCount(featured?.id);
+  const { likeCount, liked: dbLiked, loading: likeLoading, error: likeError, toggleLike } = usePostLikes(featured?.id);
+  const { shareCount, error: shareError, incrementShare } = useShareCount(featured?.id);
   const commentCount = useCommentCount(featured?.id);
+  const requireSub = useRequireSubscription();
   const isDb = featured ? isDbPostId(featured.id) : false;
   const liked = isDb ? dbLiked : localLiked;
   const displayLikeCount = isDb ? likeCount : (featured?.engagement?.likes ?? 0) + (localLiked ? 1 : 0);
@@ -26,6 +28,7 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
 
   const handleShare = () => {
     if (!featured) return;
+    if (!requireSub()) return;
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({ title: featured.title, url: postUrl }).catch(() => {});
     } else {
@@ -35,6 +38,7 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
   };
 
   const handleLike = () => {
+    if (!requireSub()) return;
     if (isDb) void toggleLike();
     else setLocalLiked((v) => !v);
   };
@@ -132,6 +136,9 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
                 </button>
                 <Link
                   to={`/post/${featured.id}#comments`}
+                  onClick={(e) => {
+                    if (!requireSub()) e.preventDefault();
+                  }}
                   className="flex items-center gap-1.5 hover:text-gray-900 transition-colors"
                 >
                   <MessageSquare size={18} />
@@ -147,6 +154,12 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
                   {shareCount > 0 && <span className="text-sm">{shareCount}</span>}
                 </button>
               </div>
+
+              {(isDb && (likeError || shareError)) && (
+                <p className="text-xs text-red-600">
+                  {likeError ?? shareError}
+                </p>
+              )}
             </motion.div>
           </div>
         </div>

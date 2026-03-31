@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, Home, Archive, Info } from "lucide-react";
+import { Search, Home, Archive, Info, User as UserIcon, LogOut, ChevronDown } from "lucide-react";
 import { TubelightNavbar } from "./ui/tubelight-navbar";
+import { useAuth } from "@/providers/AuthProvider";
+import { useSubscriptionStatus } from "@/lib/subscription";
 
 const navItems = [
   { name: "Home", url: "/", icon: Home },
@@ -13,6 +15,9 @@ export const Navbar = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [searchQ, setSearchQ] = useState("");
+  const { signOut } = useAuth();
+  const { user, subscribed, loading: subscriptionLoading } = useSubscriptionStatus();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,13 +55,60 @@ export const Navbar = () => {
             <Link to="/archive" className="p-2 text-gray-500 hover:text-black sm:hidden" aria-label="Search">
               <Search size={20} />
             </Link>
-            <Link
-              to="/subscribe"
-              state={{ from: pathname }}
-              className="bg-accent text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-accent-hover transition-colors"
-            >
-              Subscribe
-            </Link>
+
+            {user && subscribed ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm font-medium text-gray-800 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                  aria-haspopup="menu"
+                  aria-expanded={menuOpen}
+                >
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-stone-100 border border-gray-200 text-gray-700">
+                    <UserIcon size={16} />
+                  </span>
+                  <span className="hidden sm:inline">Account</span>
+                  <ChevronDown size={16} className="text-gray-500" />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-gray-100 bg-white shadow-lg overflow-hidden"
+                  >
+                    <div className="px-4 py-3 border-b border-gray-100">
+                      <p className="text-xs text-gray-500">Signed in as</p>
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {user.email ?? user.id}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={async () => {
+                        setMenuOpen(false);
+                        await signOut();
+                      }}
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <LogOut size={16} className="text-gray-500" />
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : subscriptionLoading ? (
+              <div className="h-9 w-24 rounded-md bg-gray-100 animate-pulse" aria-hidden />
+            ) : (
+              <Link
+                to="/subscribe"
+                state={{ from: pathname }}
+                className="bg-accent text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-accent-hover transition-colors"
+              >
+                Subscribe
+              </Link>
+            )}
           </div>
         </div>
         {/* Mobile: pill nav below header */}
