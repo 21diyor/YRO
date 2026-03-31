@@ -7,7 +7,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 export const Subscribe = () => {
   const [email, setEmail] = useState('');
-  const [subscribed, setSubscribed] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [sendingLink, setSendingLink] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +25,7 @@ export const Subscribe = () => {
       try {
         localStorage.setItem('yro-subscribed', 'true');
       } catch (_) {}
-      setSubscribed(true);
+      setLinkSent(true);
       return;
     }
 
@@ -44,7 +44,7 @@ export const Subscribe = () => {
       });
       if (otpError) throw otpError;
       // After the user clicks the email link, they'll be logged in and we'll upsert below.
-      setSubscribed(true);
+      setLinkSent(true);
     } catch (err: any) {
       const msg = err?.message ?? 'Failed to send login link.';
       if (msg.toLowerCase().includes('rate limit')) {
@@ -64,7 +64,7 @@ export const Subscribe = () => {
       try {
         const emailValue = user.email ?? email.trim().toLowerCase();
         if (!emailValue) return;
-        await supabase.from('newsletter_subscribers').upsert(
+        const { error: upsertError } = await supabase.from('newsletter_subscribers').upsert(
           {
             user_id: user.id,
             email: emailValue,
@@ -73,8 +73,9 @@ export const Subscribe = () => {
           },
           { onConflict: 'user_id' },
         );
+        if (upsertError) throw upsertError;
       } catch (_) {
-        // Non-blocking: UI can still show logged-in state; admins can inspect logs.
+        setError('Signed in, but we could not confirm your subscription yet. Please try again in a moment.');
       }
     };
     void run();
@@ -86,7 +87,7 @@ export const Subscribe = () => {
   };
 
   // Show success state when: (a) user just submitted, or (b) user landed here after magic link (session exists)
-  const showSuccess = subscribed || Boolean(user);
+  const showSuccess = linkSent || Boolean(user);
 
   // Wait for auth to finish loading before deciding; avoids showing form before session from magic link is detected
   if (configured && authLoading) {
@@ -107,18 +108,22 @@ export const Subscribe = () => {
         <div className="flex-grow bg-gray-50/80 flex flex-col items-center justify-center px-4 py-16">
           <div className="w-full max-w-md text-center">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">
-              Spread the word
+              {configured && !user ? "Check your email" : "Spread the word"}
             </h1>
             <p className="text-gray-600 mb-8">
-              If you want to help Youth Research Office even more, share your reason for subscribing.
+              {configured && !user
+                ? "We sent you a sign-in link. Click it to finish signing in and unlock likes, comments, and shares."
+                : "If you want to help Youth Research Office even more, share your reason for subscribing."}
             </p>
             {configured && !user && (
               <p className="text-xs text-gray-500 mb-6">
                 If you haven't clicked the email link yet, check your inbox to complete login.
               </p>
             )}
+            {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
             <button
               onClick={() => setShowShareModal(true)}
+              disabled={configured && !user}
               className="w-full px-6 py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-colors mb-4"
             >
               Share

@@ -7,28 +7,33 @@ export function useSubscriptionStatus() {
   const { configured, user } = useAuth();
   const [subscribed, setSubscribed] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const run = async () => {
       if (!configured || !isSupabaseConfigured || !supabase) {
         setSubscribed(false);
         setLoading(false);
+        setError(null);
         return;
       }
       if (!user) {
         setSubscribed(false);
         setLoading(false);
+        setError(null);
         return;
       }
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      const { data, error: fetchError } = await supabase
         .from("newsletter_subscribers")
         .select("unsubscribed_at")
         .eq("user_id", user.id)
         .maybeSingle();
-      if (error) {
+      if (fetchError) {
         setSubscribed(false);
         setLoading(false);
+        setError(fetchError.message ?? "Failed to check subscription status.");
         return;
       }
       setSubscribed(Boolean(data && (data as { unsubscribed_at: string | null }).unsubscribed_at == null));
@@ -37,17 +42,19 @@ export function useSubscriptionStatus() {
     void run();
   }, [configured, user?.id]);
 
-  return { subscribed, loading, configured, user };
+  return { subscribed, loading, configured, user, error };
 }
 
 /** Returns a function that either runs `fn` (if subscribed) or navigates to `/subscribe`. */
 export function useRequireSubscription() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { subscribed } = useSubscriptionStatus();
+  const { subscribed, loading } = useSubscriptionStatus();
 
   return React.useCallback(
     (fn?: () => void) => {
+      // Avoid redirect loops while subscription status is still being fetched.
+      if (loading) return false;
       if (subscribed) {
         fn?.();
         return true;
@@ -55,7 +62,7 @@ export function useRequireSubscription() {
       navigate("/subscribe", { state: { from: pathname } });
       return false;
     },
-    [navigate, pathname, subscribed],
+    [loading, navigate, pathname, subscribed],
   );
 }
 
