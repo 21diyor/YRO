@@ -3,7 +3,6 @@
 import createGlobe, { type COBEOptions } from "cobe"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
-import { useTheme } from "@/providers/ThemeProvider"
 
 // Uzbekistan border — approximate polygon traced clockwise from NW
 const UZBEKISTAN_BORDER: COBEOptions["markers"] = [
@@ -41,35 +40,30 @@ const UZBEKISTAN_BORDER: COBEOptions["markers"] = [
   { location: [42.0, 58.2], size: 0.04 },
 ]
 
-function buildConfig(isDark: boolean): COBEOptions {
-  return {
-    width: 800,
-    height: 800,
-    onRender: () => {},
-    devicePixelRatio: 2,
-    phi: 0,
-    theta: 0.3,
-    dark: isDark ? 1 : 0,
-    diffuse: isDark ? 1.2 : 0.5,
-    mapSamples: 16000,
-    mapBrightness: isDark ? 8 : 1.2,
-    baseColor: isDark ? [0.06, 0.06, 0.06] : [1, 1, 1],
-    markerColor: [1.0, 0.52, 0.1],   // orange — same in both modes
-    glowColor: isDark ? [0.12, 0.12, 0.12] : [1, 1, 1],
-    markers: UZBEKISTAN_BORDER,
-  }
+const GLOBE_CONFIG: COBEOptions = {
+  width: 800,
+  height: 800,
+  onRender: () => {},
+  devicePixelRatio: 2,
+  phi: 0,
+  theta: 0.3,
+  dark: 0,
+  diffuse: 0.4,
+  mapSamples: 16000,
+  mapBrightness: 1.2,
+  baseColor: [1, 1, 1],
+  markerColor: [1.0, 0.52, 0.1],
+  glowColor: [1, 1, 1],
+  markers: UZBEKISTAN_BORDER,
 }
 
 export function Globe({
   className,
-  config,
+  config = GLOBE_CONFIG,
 }: {
   className?: string
   config?: COBEOptions
 }) {
-  const { theme } = useTheme()
-  const isDark = theme === "dark"
-
   let phi = 0
   let width = 0
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -112,21 +106,17 @@ export function Globe({
     window.addEventListener("resize", onResize)
     onResize()
 
-    const resolvedConfig = config ?? buildConfig(isDark)
-
     const globe = createGlobe(canvasRef.current!, {
-      ...resolvedConfig,
+      ...config,
       width: width * 2,
       height: width * 2,
       onRender,
     })
 
-    setTimeout(() => {
-      if (canvasRef.current) canvasRef.current.style.opacity = "1"
-    })
+    setTimeout(() => (canvasRef.current!.style.opacity = "1"))
     return () => globe.destroy()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isDark])
+  }, [])
 
   return (
     <div
@@ -138,7 +128,6 @@ export function Globe({
       <canvas
         className={cn(
           "size-full opacity-0 transition-opacity duration-500 [contain:layout_paint_size]",
-          isDark && "[filter:drop-shadow(0_0_12px_rgba(255,130,30,0.35))]",
         )}
         ref={canvasRef}
         onPointerDown={(e) =>
