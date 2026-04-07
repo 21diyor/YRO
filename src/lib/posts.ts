@@ -10,6 +10,7 @@ type DbPostRow = {
   cover_image_url: string | null
   category: string | null
   published_at: string | null
+  view_count: number | null
 }
 
 function formatMonthYear(iso: string | null): string {
@@ -52,6 +53,7 @@ function mapDbPostToUi(row: DbPostRow): Post {
     summary: row.summary,
     content: row.content,
     image: coverImageForDbPost(row),
+    viewCount: row.view_count ?? 0,
   }
 }
 
@@ -133,7 +135,7 @@ export function usePublishedPosts() {
       setError(null)
       const { data, error } = await supabase
         .from("posts")
-        .select("id,title,summary,content,cover_image_url,category,published_at")
+        .select("id,title,summary,content,cover_image_url,category,published_at,view_count")
         .eq("status", "published")
         .order("published_at", { ascending: false })
       if (error) {
@@ -174,7 +176,7 @@ export function usePostById(id: string | undefined) {
       try {
         const { data } = await supabase
           .from("posts")
-          .select("id,title,summary,content,cover_image_url,category,published_at")
+          .select("id,title,summary,content,cover_image_url,category,published_at,view_count")
           .eq("id", id)
           .maybeSingle()
         if (data) setPost(mapDbPostToUi(data as DbPostRow))

@@ -172,3 +172,21 @@ export function useShareCount(postId: string | undefined) {
 
   return { shareCount, error, incrementShare, refetch: fetch };
 }
+
+export function usePostCardEngagement(postId: string | undefined) {
+  const [likeCount, setLikeCount] = React.useState(0);
+  const [commentCount, setCommentCount] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!postId || !isDbPostId(postId) || !isSupabaseConfigured || !supabase) return;
+    void Promise.all([
+      supabase.from("post_likes").select("*", { count: "exact", head: true }).eq("post_id", postId),
+      supabase.from("comments").select("*", { count: "exact", head: true }).eq("post_id", postId),
+    ]).then(([likesRes, commentsRes]) => {
+      setLikeCount(likesRes.count ?? 0);
+      setCommentCount(commentsRes.count ?? 0);
+    });
+  }, [postId]);
+
+  return { likeCount, commentCount };
+}

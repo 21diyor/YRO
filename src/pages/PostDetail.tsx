@@ -9,6 +9,7 @@ import { Heart, MessageSquare, Share2, Lightbulb, ArrowLeft } from 'lucide-react
 import { usePostById, usePublishedPosts } from '../lib/posts';
 import { usePostLikes, usePostComments, useShareCount, isDbPostId } from '../lib/engagement';
 import { useRequireSubscription } from '../lib/subscription';
+import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
 
 const SUBSCRIBE_MODAL_KEY = 'yro-subscribe-modal-dismissed-date';
 
@@ -36,6 +37,15 @@ export const PostDetail = () => {
   const [likeMessage, setLikeMessage] = useState<string | null>(null);
   const [engagementError, setEngagementError] = useState<string | null>(null);
   const hasShownRef = useRef(false);
+  const viewTrackedIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!id || !isDbPostId(id) || !isSupabaseConfigured || !supabase) return;
+    if (viewTrackedIdRef.current === id) return;
+    viewTrackedIdRef.current = id;
+    void supabase.rpc('increment_post_view', { p_post_id: id });
+  }, [id]);
+
   const { likeCount, liked, loading: likeLoading, error: likeError, toggleLike } = usePostLikes(id);
   const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = usePostComments(id);
   const { shareCount, error: shareError, incrementShare } = useShareCount(id);

@@ -8,6 +8,7 @@ export interface Post {
   summary: string;
   content: string;
   image: string;
+  viewCount?: number;
   stats?: { label: string; value: string }[];
   engagement?: { likes: number; comments: number; reposts: number };
 }
