@@ -4,42 +4,6 @@ import createGlobe, { type COBEOptions } from "cobe"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 
-// Uzbekistan border — approximate polygon traced clockwise from NW
-const UZBEKISTAN_BORDER: COBEOptions["markers"] = [
-  // NW — Karakalpakstan / Aral Sea
-  { location: [42.8, 57.5], size: 0.04 },
-  { location: [42.8, 59.0], size: 0.04 },
-  { location: [42.5, 61.0], size: 0.04 },
-  // N — Kazakhstan border
-  { location: [42.0, 63.0], size: 0.04 },
-  { location: [41.8, 64.5], size: 0.04 },
-  { location: [41.5, 66.0], size: 0.04 },
-  // NE — towards Tashkent
-  { location: [41.0, 67.5], size: 0.04 },
-  { location: [41.3, 68.5], size: 0.04 },
-  { location: [41.6, 69.5], size: 0.04 },
-  // E — Fergana Valley / Kyrgyzstan border
-  { location: [41.0, 70.5], size: 0.04 },
-  { location: [40.5, 71.0], size: 0.04 },
-  { location: [39.9, 70.8], size: 0.04 },
-  // SE — Tajikistan border
-  { location: [39.2, 70.2], size: 0.04 },
-  { location: [38.5, 69.5], size: 0.04 },
-  { location: [38.0, 68.5], size: 0.04 },
-  // S — Afghanistan / Turkmenistan border
-  { location: [37.3, 67.5], size: 0.04 },
-  { location: [37.2, 66.0], size: 0.04 },
-  { location: [37.5, 64.5], size: 0.04 },
-  // SW — Turkmenistan border
-  { location: [38.0, 63.8], size: 0.04 },
-  { location: [39.0, 63.2], size: 0.04 },
-  { location: [40.0, 62.0], size: 0.04 },
-  { location: [40.5, 60.8], size: 0.04 },
-  // W — back north to Karakalpakstan
-  { location: [41.2, 59.5], size: 0.04 },
-  { location: [42.0, 58.2], size: 0.04 },
-]
-
 const GLOBE_CONFIG: COBEOptions = {
   width: 800,
   height: 800,
@@ -52,9 +16,20 @@ const GLOBE_CONFIG: COBEOptions = {
   mapSamples: 16000,
   mapBrightness: 1.2,
   baseColor: [1, 1, 1],
-  markerColor: [1.0, 0.52, 0.1],
+  markerColor: [251 / 255, 100 / 255, 21 / 255],
   glowColor: [1, 1, 1],
-  markers: UZBEKISTAN_BORDER,
+  markers: [
+    { location: [14.5995, 120.9842], size: 0.03 },
+    { location: [19.076, 72.8777], size: 0.1 },
+    { location: [23.8103, 90.4125], size: 0.05 },
+    { location: [30.0444, 31.2357], size: 0.07 },
+    { location: [39.9042, 116.4074], size: 0.08 },
+    { location: [-23.5505, -46.6333], size: 0.1 },
+    { location: [19.4326, -99.1332], size: 0.1 },
+    { location: [40.7128, -74.006], size: 0.1 },
+    { location: [34.6937, 135.5022], size: 0.05 },
+    { location: [41.0082, 28.9784], size: 0.06 },
+  ],
 }
 
 export function Globe({
@@ -67,18 +42,18 @@ export function Globe({
   let phi = 0
   let width = 0
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const pointerInteracting = useRef<number | null>(null)
+  const pointerInteracting = useRef<any>(null)
   const pointerInteractionMovement = useRef(0)
   const [r, setR] = useState(0)
 
-  const updatePointerInteraction = (value: number | null) => {
+  const updatePointerInteraction = (value: any) => {
     pointerInteracting.current = value
     if (canvasRef.current) {
-      canvasRef.current.style.cursor = value !== null ? "grabbing" : "grab"
+      canvasRef.current.style.cursor = value ? "grabbing" : "grab"
     }
   }
 
-  const updateMovement = (clientX: number) => {
+  const updateMovement = (clientX: any) => {
     if (pointerInteracting.current !== null) {
       const delta = clientX - pointerInteracting.current
       pointerInteractionMovement.current = delta
@@ -115,7 +90,6 @@ export function Globe({
 
     setTimeout(() => (canvasRef.current!.style.opacity = "1"))
     return () => globe.destroy()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
