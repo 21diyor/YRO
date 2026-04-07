@@ -124,7 +124,7 @@ export const Navbar = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
             <Link to="/" className="flex items-center hover:opacity-80 transition-opacity shrink-0">
-              <img src="/Logo.png" alt="Youth Research Office" className="h-14 w-auto object-contain" />
+              <img src="/Logo.png" alt="Youth Research Office" className="h-12 w-12 object-cover rounded-full" />
             </Link>
 
             <div className="hidden md:flex flex-1 justify-center">

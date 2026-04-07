@@ -5,7 +5,7 @@ import { SidebarProfileSection, SubscribeBlock } from './components/SidebarProfi
 import { Hero } from './components/Hero';
 import { PostListSection } from './components/PostListSection';
 import { type FilterTab } from './data';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Rocket, GraduationCap, BarChart3 } from 'lucide-react';
 import { usePublishedPosts } from './lib/posts';
 import { useLanguage } from './providers/LanguageProvider';
 import { t } from './lib/i18n';
@@ -16,9 +16,9 @@ export default function App() {
   const { posts, loading } = usePublishedPosts();
   const { lang } = useLanguage();
   const recommendations = [
-    { title: "Uzbekistan Startup Ecosystem", author: "YRO Research", icon: "🚀" },
-    { title: "Higher Education Trends", author: "YRO Research", icon: "🎓" },
-    { title: "Labor Market Analysis", author: "YRO Research", icon: "📊" }
+    { title: "Uzbekistan Startup Ecosystem", author: "YRO Research", Icon: Rocket },
+    { title: "Higher Education Trends", author: "YRO Research", Icon: GraduationCap },
+    { title: "Labor Market Analysis", author: "YRO Research", Icon: BarChart3 },
   ];
 
   return (
@@ -69,11 +69,11 @@ export default function App() {
                         to="/archive"
                         className="flex items-center gap-3 group cursor-pointer"
                       >
-                        <div className="w-10 h-10 bg-gray-100 dark:bg-[#1e1e1e] rounded flex items-center justify-center text-lg">
-                          {rec.icon}
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-[#1e1e1e] rounded-lg flex items-center justify-center shrink-0 border border-gray-200 dark:border-[#2a2a2a]">
+                          <rec.Icon size={17} className="text-gray-600 dark:text-[#999999]" />
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold dark:text-[#ededed] group-hover:underline">{rec.title}</h4>
+                          <h4 className="text-sm font-semibold dark:text-[#ededed] group-hover:underline">{rec.title}</h4>
                           <p className="text-xs text-gray-500 dark:text-[#666666]">{rec.author}</p>
                         </div>
                       </Link>
