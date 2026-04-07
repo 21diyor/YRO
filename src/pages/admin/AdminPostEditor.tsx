@@ -13,6 +13,9 @@ type PostRow = {
   cover_image_url: string | null
   status: "draft" | "published"
   published_at: string | null
+  title_uz: string | null
+  summary_uz: string | null
+  content_uz: string | null
 }
 
 export function AdminPostEditor() {
@@ -27,6 +30,7 @@ export function AdminPostEditor() {
   const [deleting, setDeleting] = React.useState(false)
   const [uploadingImage, setUploadingImage] = React.useState(false)
   const [post, setPost] = React.useState<PostRow | null>(null)
+  const [activeTab, setActiveTab] = React.useState<"en" | "uz">("en")
 
   React.useEffect(() => {
     const run = async () => {
@@ -59,7 +63,7 @@ export function AdminPostEditor() {
 
       const { data, error } = await supabase
         .from("posts")
-        .select("id,title,summary,content,category,cover_image_url,status,published_at")
+        .select("id,title,summary,content,category,cover_image_url,status,published_at,title_uz,summary_uz,content_uz")
         .eq("id", id)
         .maybeSingle()
       if (error) setError(error.message)
@@ -86,6 +90,9 @@ export function AdminPostEditor() {
         content: post.content,
         category: post.category,
         cover_image_url: post.cover_image_url,
+        title_uz: post.title_uz || null,
+        summary_uz: post.summary_uz || null,
+        content_uz: post.content_uz || null,
       })
       .eq("id", post.id)
     if (error) setError(error.message)
@@ -107,6 +114,9 @@ export function AdminPostEditor() {
         content: post.content,
         category: post.category,
         cover_image_url: post.cover_image_url,
+        title_uz: post.title_uz || null,
+        summary_uz: post.summary_uz || null,
+        content_uz: post.content_uz || null,
       })
       .eq("id", post.id)
     if (saveRes.error) {
@@ -286,14 +296,87 @@ export function AdminPostEditor() {
           {info && <div className="mb-4 text-sm text-gray-700">{info}</div>}
 
           <div className="grid grid-cols-1 gap-4">
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Title</span>
-              <input
-                value={post.title}
-                onChange={(e) => update({ title: e.target.value })}
-                className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
-              />
-            </label>
+            {/* Language tabs */}
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+              <button
+                type="button"
+                onClick={() => setActiveTab("en")}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "en" ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("uz")}
+                className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${activeTab === "uz" ? "bg-white shadow-sm text-gray-900" : "text-gray-500 hover:text-gray-700"}`}
+              >
+                O'zbekcha
+              </button>
+            </div>
+
+            {activeTab === "en" ? (
+              <>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Title</span>
+                  <input
+                    value={post.title}
+                    onChange={(e) => update({ title: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Summary</span>
+                  <textarea
+                    value={post.summary}
+                    onChange={(e) => update({ summary: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    rows={3}
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Content</span>
+                  <textarea
+                    value={post.content}
+                    onChange={(e) => update({ content: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    rows={16}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 -mb-2">Leave blank to fall back to English for readers.</p>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Title (O'zbekcha)</span>
+                  <input
+                    value={post.title_uz ?? ""}
+                    onChange={(e) => update({ title_uz: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    placeholder="O'zbek tilidagi sarlavha"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Summary (O'zbekcha)</span>
+                  <textarea
+                    value={post.summary_uz ?? ""}
+                    onChange={(e) => update({ summary_uz: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    rows={3}
+                    placeholder="Qisqacha mazmun"
+                  />
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium text-gray-700">Content (O'zbekcha)</span>
+                  <textarea
+                    value={post.content_uz ?? ""}
+                    onChange={(e) => update({ content_uz: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
+                    rows={16}
+                    placeholder="Maqola matni"
+                  />
+                </label>
+              </>
+            )}
 
             <label className="block">
               <span className="text-sm font-medium text-gray-700">Category</span>
@@ -355,26 +438,6 @@ export function AdminPostEditor() {
                   className="mt-2 h-32 w-auto object-cover rounded-md border border-gray-200"
                 />
               )}
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Summary</span>
-              <textarea
-                value={post.summary}
-                onChange={(e) => update({ summary: e.target.value })}
-                className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
-                rows={3}
-              />
-            </label>
-
-            <label className="block">
-              <span className="text-sm font-medium text-gray-700">Content</span>
-              <textarea
-                value={post.content}
-                onChange={(e) => update({ content: e.target.value })}
-                className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-400"
-                rows={16}
-              />
             </label>
 
             <div className="flex justify-between items-center pt-4 border-t border-gray-100">

@@ -7,11 +7,14 @@ import { PostListSection } from './components/PostListSection';
 import { type FilterTab } from './data';
 import { ChevronRight } from 'lucide-react';
 import { usePublishedPosts } from './lib/posts';
+import { useLanguage } from './providers/LanguageProvider';
+import { t } from './lib/i18n';
 
 export default function App() {
   const [filter, setFilter] = useState<FilterTab>('latest');
   const location = useLocation();
   const { posts, loading } = usePublishedPosts();
+  const { lang } = useLanguage();
   const recommendations = [
     { title: "Uzbekistan Startup Ecosystem", author: "YRO Research", icon: "🚀" },
     { title: "Higher Education Trends", author: "YRO Research", icon: "🎓" },
@@ -19,7 +22,7 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans dark:bg-[#0f0f0f] dark:text-[#ededed]">
       <Navbar />
       
       <main className="flex-grow">
@@ -39,9 +42,9 @@ export default function App() {
 
               <Link
                 to="/archive"
-                className="mt-8 inline-flex items-center gap-2 text-sm font-medium bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded transition-colors"
+                className="mt-8 inline-flex items-center gap-2 text-sm font-medium bg-gray-100 dark:bg-[#1e1e1e] hover:bg-gray-200 dark:hover:bg-[#2a2a2a] text-gray-800 dark:text-[#c4c4c4] px-4 py-2 rounded transition-colors"
               >
-                See all <ChevronRight size={16} />
+                {t(lang, "post_see_all")} <ChevronRight size={16} />
               </Link>
             </div>
             
@@ -53,9 +56,9 @@ export default function App() {
                 {/* Recommendations */}
                 <div className="space-y-6">
                   <div className="flex justify-between items-center">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">Recommendations</h3>
-                    <Link to="/archive" className="text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-black">
-                      View all 22
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500 dark:text-[#666666]">{t(lang, "sidebar_recommendations")}</h3>
+                    <Link to="/archive" className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-[#555555] hover:text-black dark:hover:text-white">
+                      {t(lang, "sidebar_view_all")}
                     </Link>
                   </div>
                   
@@ -66,12 +69,12 @@ export default function App() {
                         to="/archive"
                         className="flex items-center gap-3 group cursor-pointer"
                       >
-                        <div className="w-10 h-10 bg-gray-100 rounded flex items-center justify-center text-lg">
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-[#1e1e1e] rounded flex items-center justify-center text-lg">
                           {rec.icon}
                         </div>
                         <div>
-                          <h4 className="text-sm font-bold group-hover:underline">{rec.title}</h4>
-                          <p className="text-xs text-gray-500">{rec.author}</p>
+                          <h4 className="text-sm font-bold dark:text-[#ededed] group-hover:underline">{rec.title}</h4>
+                          <p className="text-xs text-gray-500 dark:text-[#666666]">{rec.author}</p>
                         </div>
                       </Link>
                     ))}
@@ -83,22 +86,22 @@ export default function App() {
         </div>
       </main>
       
-      <footer className="bg-white border-t border-gray-100 py-16">
+      <footer className="bg-white dark:bg-[#0f0f0f] border-t border-gray-100 dark:border-[#1e1e1e] py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mb-12">
             <img src="/Logo.png" alt="Youth Research Office" className="h-12 w-auto object-contain mb-4" />
-            <h2 className="text-lg font-bold mb-2">Youth Research Office</h2>
-            <p className="text-sm text-gray-600 leading-relaxed mb-6">
-              Insights for policymakers and entrepreneurs creating the future of Uzbekistan.
+            <h2 className="text-lg font-bold dark:text-[#ededed] mb-2">{t(lang, "sidebar_title")}</h2>
+            <p className="text-sm text-gray-600 dark:text-[#a0a0a0] leading-relaxed mb-6">
+              {t(lang, "footer_description")}
             </p>
             <SubscribeBlock fromPath={location.pathname} />
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm font-medium text-gray-600">
-            <Link to="/about" className="hover:text-black">About</Link>
-            <Link to="/archive" className="hover:text-black">Archive</Link>
-            <Link to="/archive" className="hover:text-black">Recommendations</Link>
-            <Link to="/archive" className="hover:text-black">Sitemap</Link>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-sm font-medium text-gray-600 dark:text-[#a0a0a0]">
+            <Link to="/about" className="hover:text-black dark:hover:text-white">{t(lang, "footer_about")}</Link>
+            <Link to="/archive" className="hover:text-black dark:hover:text-white">{t(lang, "footer_archive")}</Link>
+            <Link to="/archive" className="hover:text-black dark:hover:text-white">{t(lang, "footer_recommendations")}</Link>
+            <Link to="/archive" className="hover:text-black dark:hover:text-white">{t(lang, "footer_sitemap")}</Link>
           </div>
         </div>
       </footer>

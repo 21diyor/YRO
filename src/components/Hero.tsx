@@ -9,6 +9,9 @@ import { BackgroundPaperShaders } from './ui/background-paper-shaders';
 import { PostImage } from './PostImage';
 import { usePostLikes, useShareCount, useCommentCount, isDbPostId } from '../lib/engagement';
 import { useRequireSubscription } from '../lib/subscription';
+import { useLanguage } from '../providers/LanguageProvider';
+import { localizePost } from '../lib/posts';
+import { t } from '../lib/i18n';
 
 interface HeroProps {
   posts?: Post[];
@@ -16,6 +19,8 @@ interface HeroProps {
 
 export const Hero = ({ posts = defaultPosts }: HeroProps) => {
   const featured = posts[0];
+  const { lang } = useLanguage();
+  const localizedFeatured = featured ? localizePost(featured, lang) : featured;
   const [localLiked, setLocalLiked] = React.useState(false);
   const { likeCount, liked: dbLiked, loading: likeLoading, error: likeError, toggleLike } = usePostLikes(featured?.id);
   const { shareCount, error: shareError, incrementShare } = useShareCount(featured?.id);
@@ -48,39 +53,39 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-8">
       {/* Globe hero (separate from featured preview) */}
-      <div className="relative rounded-2xl border border-gray-100 bg-white overflow-hidden">
+      <div className="relative rounded-2xl border border-gray-100 dark:border-[#222222] bg-white dark:bg-[#0f0f0f] overflow-hidden">
         <div className="relative h-[340px] sm:h-[390px] lg:h-[420px] overflow-hidden">
           <BackgroundPaperShaders
             className="absolute inset-0 opacity-[0.14] pointer-events-none"
             color1="#a39289"
             color2="#ffffff"
           />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(163,146,137,0.18),rgba(255,255,255,0))]" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_55%,rgba(163,146,137,0.18),rgba(255,255,255,0))] dark:bg-[radial-gradient(circle_at_50%_55%,rgba(163,146,137,0.12),rgba(0,0,0,0))]" />
 
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center pt-10 sm:pt-12 z-10">
-            <span className="select-none text-center text-4xl sm:text-6xl md:text-7xl font-semibold tracking-tight text-gray-900/85">
-              Youth Research Office
+            <span className="select-none text-center text-4xl sm:text-6xl md:text-7xl font-semibold tracking-tight text-gray-900/85 dark:text-[#ededed]/85">
+              {t(lang, "sidebar_title")}
             </span>
-            <span className="mt-3 h-px w-24 bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+            <span className="mt-3 h-px w-24 bg-gradient-to-r from-transparent via-gray-300 dark:via-[#444444] to-transparent" />
           </div>
 
           <Globe className="top-16 max-w-[460px] opacity-95" />
         </div>
 
-        <div className="px-6 sm:px-8 lg:px-10 pb-8 pt-6 border-t border-gray-100">
+        <div className="px-6 sm:px-8 lg:px-10 pb-8 pt-6 border-t border-gray-100 dark:border-[#222222]">
           <div className="max-w-2xl">
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
-              Evidence for better youth policy
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-[#ededed]">
+              {t(lang, "hero_tagline")}
             </h1>
-            <p className="mt-3 text-base sm:text-lg text-gray-600 leading-relaxed">
-              Insights for policymakers and entrepreneurs creating the future of Uzbekistan.
+            <p className="mt-3 text-base sm:text-lg text-gray-600 dark:text-[#aaaaaa] leading-relaxed">
+              {t(lang, "hero_description")}
             </p>
           </div>
         </div>
       </div>
 
       {/* Featured post preview UNDER the globe */}
-      <div className="mt-8 rounded-2xl border border-gray-100 bg-white shadow-[0_1px_0_rgba(0,0,0,0.03)] overflow-hidden">
+      <div className="mt-8 rounded-2xl border border-gray-100 dark:border-[#222222] bg-white dark:bg-[#161616] shadow-[0_1px_0_rgba(0,0,0,0.03)] overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           <Link to={`/post/${featured.id}`} className="lg:col-span-7">
             <motion.div
@@ -90,7 +95,7 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
             >
               <PostImage
                 src={featured.image}
-                alt={featured.title}
+                alt={localizedFeatured.title}
                 className="absolute inset-0 w-full h-full object-cover"
                 referrerPolicy="no-referrer"
               />
@@ -110,12 +115,12 @@ export const Hero = ({ posts = defaultPosts }: HeroProps) => {
 
               <Link to={`/post/${featured.id}`} className="block group">
                 <h2 className="text-2xl sm:text-3xl font-bold leading-tight tracking-tight text-gray-900 group-hover:underline">
-                  {featured.title}
+                  {localizedFeatured.title}
                 </h2>
               </Link>
 
               <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
-                {featured.summary}
+                {localizedFeatured.summary}
               </p>
 
               <div className="flex items-center gap-3 text-xs text-gray-500">

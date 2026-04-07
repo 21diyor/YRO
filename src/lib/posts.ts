@@ -11,6 +11,9 @@ type DbPostRow = {
   category: string | null
   published_at: string | null
   view_count: number | null
+  title_uz: string | null
+  summary_uz: string | null
+  content_uz: string | null
 }
 
 function formatMonthYear(iso: string | null): string {
@@ -54,6 +57,19 @@ function mapDbPostToUi(row: DbPostRow): Post {
     content: row.content,
     image: coverImageForDbPost(row),
     viewCount: row.view_count ?? 0,
+    title_uz: row.title_uz ?? undefined,
+    summary_uz: row.summary_uz ?? undefined,
+    content_uz: row.content_uz ?? undefined,
+  }
+}
+
+export function localizePost(post: Post, lang: import("./i18n").Language): Post {
+  if (lang === "en") return post
+  return {
+    ...post,
+    title: post.title_uz || post.title,
+    summary: post.summary_uz || post.summary,
+    content: post.content_uz || post.content,
   }
 }
 
@@ -135,7 +151,7 @@ export function usePublishedPosts() {
       setError(null)
       const { data, error } = await supabase
         .from("posts")
-        .select("id,title,summary,content,cover_image_url,category,published_at,view_count")
+        .select("id,title,summary,content,cover_image_url,category,published_at,view_count,title_uz,summary_uz,content_uz")
         .eq("status", "published")
         .order("published_at", { ascending: false })
       if (error) {
@@ -176,7 +192,7 @@ export function usePostById(id: string | undefined) {
       try {
         const { data } = await supabase
           .from("posts")
-          .select("id,title,summary,content,cover_image_url,category,published_at,view_count")
+          .select("id,title,summary,content,cover_image_url,category,published_at,view_count,title_uz,summary_uz,content_uz")
           .eq("id", id)
           .maybeSingle()
         if (data) setPost(mapDbPostToUi(data as DbPostRow))

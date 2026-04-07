@@ -1,15 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
-import { SubscribeModal } from '../components/SubscribeModal';
 import { CommentSection } from '../components/CommentSection';
 import { SharePostModal } from '../components/SharePostModal';
+import { SignUpModal } from '../components/SignUpModal';
 import { PostImage } from '../components/PostImage';
-import { Heart, MessageSquare, Share2, Lightbulb, ArrowLeft } from 'lucide-react';
-import { usePostById, usePublishedPosts } from '../lib/posts';
+import { Heart, MessageSquare, Share2, Lightbulb, ArrowLeft, Bookmark } from 'lucide-react';
+import { usePostById, usePublishedPosts, localizePost } from '../lib/posts';
 import { usePostLikes, usePostComments, useShareCount, isDbPostId } from '../lib/engagement';
-import { useRequireSubscription } from '../lib/subscription';
+import { useLanguage } from '../providers/LanguageProvider';
+import { t } from '../lib/i18n';
+import { useRequireAuth } from '../lib/subscription';
+import { useToggleSave } from '../lib/savedPosts';
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient';
+import { PostHoverPreview } from '../components/ui/post-hover-preview';
 
 const SUBSCRIBE_MODAL_KEY = 'yro-subscribe-modal-dismissed-date';
 
@@ -20,8 +24,7 @@ const getTodayDate = () => {
 
 const wasDismissedToday = () => {
   try {
-    const stored = localStorage.getItem(SUBSCRIBE_MODAL_KEY);
-    return stored === getTodayDate();
+    return localStorage.getItem(SUBSCRIBE_MODAL_KEY) === getTodayDate();
   } catch {
     return false;
   }
@@ -31,14 +34,18 @@ export const PostDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { post } = usePostById(id);
   const { posts } = usePublishedPosts();
+  const { lang } = useLanguage();
+  const localizedPost = post ? localizePost(post, lang) : post;
   const otherPosts = posts.filter((p) => p.id !== id).slice(0, 4);
-  const [showSubscribeModal, setShowSubscribeModal] = useState(false);
+
+  const [showSignUpModal, setShowSignUpModal] = useState(false);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [likeMessage, setLikeMessage] = useState<string | null>(null);
   const [engagementError, setEngagementError] = useState<string | null>(null);
-  const hasShownRef = useRef(false);
+  const hasShownNewsletterRef = useRef(false);
   const viewTrackedIdRef = useRef<string | null>(null);
 
+  // Track view once per unique post ID (ref persists across navigations, so track by id)
   useEffect(() => {
     if (!id || !isDbPostId(id) || !isSupabaseConfigured || !supabase) return;
     if (viewTrackedIdRef.current === id) return;
@@ -49,22 +56,24 @@ export const PostDetail = () => {
   const { likeCount, liked, loading: likeLoading, error: likeError, toggleLike } = usePostLikes(id);
   const { comments, loading: commentsLoading, error: commentsError, refetch: refetchComments } = usePostComments(id);
   const { shareCount, error: shareError, incrementShare } = useShareCount(id);
-  const requireSub = useRequireSubscription();
+  const { saved, toggling: saveToggling, toggleSave } = useToggleSave(id);
+
+  const openSignUp = useCallback(() => setShowSignUpModal(true), []);
+  const requireAuth = useRequireAuth(openSignUp);
 
   useEffect(() => {
     setEngagementError(likeError ?? shareError ?? commentsError ?? null);
   }, [likeError, shareError, commentsError]);
 
+  // Newsletter prompt after scrolling (separate from auth)
   useEffect(() => {
-    if (!post) return;
-    if (wasDismissedToday()) return;
+    if (!post || wasDismissedToday()) return;
 
     const checkScroll = () => {
-      if (hasShownRef.current) return;
-      if (wasDismissedToday()) return;
+      if (hasShownNewsletterRef.current || wasDismissedToday()) return;
       if (window.scrollY > 300) {
-        hasShownRef.current = true;
-        setShowSubscribeModal(true);
+        hasShownNewsletterRef.current = true;
+        setShowNewsletterModal(true);
       }
     };
 
@@ -73,35 +82,35 @@ export const PostDetail = () => {
     return () => window.removeEventListener('scroll', checkScroll);
   }, [post]);
 
-  const handleCloseSubscribeModal = () => {
-    setShowSubscribeModal(false);
-    try {
-      localStorage.setItem(SUBSCRIBE_MODAL_KEY, getTodayDate());
-    } catch (_) {}
+  const handleCloseNewsletterModal = () => {
+    setShowNewsletterModal(false);
+    try { localStorage.setItem(SUBSCRIBE_MODAL_KEY, getTodayDate()); } catch (_) {}
   };
 
-  const handleShareClick = () => requireSub(() => setShowShareModal(true));
-  const handleShareCopy = () => void incrementShare();
-  const handleShareNative = () => void incrementShare();
-
   const handleLikeClick = async () => {
-    setLikeMessage(null);
     setEngagementError(null);
-    if (!requireSub()) return;
-    const result = await toggleLike();
-    if (result === "signed_out") {
-      setLikeMessage("sign_in");
-    }
+    if (!requireAuth()) return;
+    await toggleLike();
+  };
+
+  const handleSaveClick = () => {
+    requireAuth(async () => {
+      await toggleSave();
+    });
+  };
+
+  const handleShareClick = () => {
+    requireAuth(() => setShowShareModal(true));
   };
 
   if (!post) {
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col dark:bg-[#0f0f0f]">
         <Navbar />
-        <main className="flex-grow flex items-center justify-center">
+        <main className="flex-grow flex items-center justify-center dark:bg-[#0f0f0f]">
           <div className="text-center">
-            <p className="text-gray-600 mb-4">Post not found</p>
-            <Link to="/" className="text-accent hover:underline">Return home</Link>
+            <p className="text-gray-600 dark:text-[#aaaaaa] mb-4">{t(lang, "post_not_found")}</p>
+            <Link to="/" className="text-accent hover:underline">{t(lang, "post_return_home")}</Link>
           </div>
         </main>
       </div>
@@ -109,23 +118,61 @@ export const PostDetail = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col font-sans">
+    <div className="min-h-screen flex flex-col font-sans dark:bg-[#0f0f0f] dark:text-[#ededed]">
       <Navbar />
-      <SubscribeModal isOpen={showSubscribeModal} onClose={handleCloseSubscribeModal} />
+
+      {/* Sign-up modal (for likes/comments/saves) */}
+      <SignUpModal isOpen={showSignUpModal} onClose={() => setShowSignUpModal(false)} />
+
+      {/* Newsletter modal (scroll-triggered, separate concern) */}
+      {showNewsletterModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={handleCloseNewsletterModal} aria-hidden="true" />
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
+            <button
+              onClick={handleCloseNewsletterModal}
+              className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-gray-600"
+              aria-label="Close"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 6L6 18M6 6l12 12" />
+              </svg>
+            </button>
+            <img src="/Logo.png" alt="YRO" className="w-12 h-12 mx-auto mb-4 object-contain rounded-full" />
+            <h2 className="text-xl font-bold text-gray-900 mb-2">Enjoying this research?</h2>
+            <p className="text-sm text-gray-500 mb-6">
+              Subscribe to get new insights from Youth Research Office delivered to your inbox.
+            </p>
+            <Link
+              to="/subscribe"
+              onClick={handleCloseNewsletterModal}
+              className="block w-full py-3 bg-accent hover:bg-accent-hover text-white font-medium rounded-lg transition-colors text-sm"
+            >
+              Subscribe for free
+            </Link>
+            <button
+              onClick={handleCloseNewsletterModal}
+              className="mt-3 text-sm text-gray-500 hover:text-gray-700 hover:underline"
+            >
+              Maybe later
+            </button>
+          </div>
+        </div>
+      )}
+
       {post && (
         <SharePostModal
           isOpen={showShareModal}
           onClose={() => setShowShareModal(false)}
           title={post.title}
           url={typeof window !== "undefined" ? window.location.href : ""}
-          onCopy={handleShareCopy}
-          onNativeShare={handleShareNative}
+          onCopy={() => void incrementShare()}
+          onNativeShare={() => void incrementShare()}
           shareCount={shareCount}
         />
       )}
 
       <main className="flex-grow relative">
-        {/* Left vertical progress marker */}
         <div className="fixed left-4 top-1/2 -translate-y-1/2 hidden lg:block w-px h-32 bg-gray-200">
           <div className="absolute left-0 top-0 w-1 h-1 bg-gray-400 rounded-full -translate-x-1/2" />
           <div className="absolute left-0 top-1/2 w-1 h-1 bg-gray-400 rounded-full -translate-x-1/2 -translate-y-1/2" />
@@ -133,25 +180,22 @@ export const PostDetail = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-          {/* Back link */}
           <Link
             to="/"
-            className="flex items-center gap-2 text-sm text-gray-500 hover:text-black mb-8 transition-colors w-fit"
+            className="flex items-center gap-2 text-sm text-gray-500 dark:text-[#666666] hover:text-black dark:hover:text-white mb-8 transition-colors w-fit"
           >
             <ArrowLeft size={16} />
-            Back
+            {t(lang, "post_back")}
           </Link>
 
-          {/* Article header */}
           <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] leading-tight mb-4">
-              {post.title}
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#1a1a1a] dark:text-[#ededed] leading-tight mb-4">
+              {localizedPost!.title}
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 leading-relaxed mb-6">
-              {post.summary}
+            <p className="text-lg sm:text-xl text-gray-600 dark:text-[#a0a0a0] leading-relaxed mb-6">
+              {localizedPost!.summary}
             </p>
 
-            {/* Author and date */}
             <div className="flex items-center gap-3 mb-4">
               <img
                 src="/Logo.png"
@@ -159,50 +203,61 @@ export const PostDetail = () => {
                 className="w-10 h-10 rounded-full object-cover border border-gray-200"
               />
               <div>
-                <p className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-                  YRO Team
-                </p>
-                <p className="text-xs text-gray-500">
-                  {post.date} • {post.category}
-                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-[#ededed] uppercase tracking-wider">{t(lang, "post_yro_team")}</p>
+                <p className="text-xs text-gray-500 dark:text-[#666666]">{post.date} • {post.category}</p>
               </div>
             </div>
 
-            {/* Engagement and share */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={handleLikeClick}
-                  disabled={likeLoading}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors text-sm ${liked ? "text-red-500 border-red-200 bg-red-50/50" : "text-gray-600 border-gray-200 hover:border-gray-300 hover:text-black"}`}
-                >
-                  <Heart size={16} fill={liked ? "currentColor" : "none"} />
-                  <span>{id && isDbPostId(id) ? likeCount : (post.engagement?.likes ?? 0)}</span>
-                </button>
-                {likeMessage === "sign_in" && (
-                  <span className="text-xs text-gray-500">
-                    <Link to="/subscribe" className="text-accent hover:underline">Sign in</Link> to like
-                  </span>
-                )}
-              </div>
+            {/* Engagement bar */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Like */}
+              <button
+                type="button"
+                onClick={handleLikeClick}
+                disabled={likeLoading}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors text-sm ${
+                  liked
+                    ? "text-red-500 border-red-200 bg-red-50/50"
+                    : "text-gray-600 border-gray-200 hover:border-gray-300 hover:text-black"
+                }`}
+              >
+                <Heart size={16} fill={liked ? "currentColor" : "none"} />
+                <span>{id && isDbPostId(id) ? likeCount : (post.engagement?.likes ?? 0)}</span>
+              </button>
+
+              {/* Comments anchor */}
               <a
                 href="#comments"
-                onClick={(e) => {
-                  if (!requireSub()) e.preventDefault();
-                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-gray-300 hover:text-black transition-colors text-sm"
               >
                 <MessageSquare size={16} />
                 <span>{comments.length}</span>
               </a>
+
+              {/* Save */}
+              <button
+                type="button"
+                onClick={handleSaveClick}
+                disabled={saveToggling}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors text-sm ${
+                  saved
+                    ? "text-amber-600 border-amber-200 bg-amber-50/50"
+                    : "text-gray-600 border-gray-200 hover:border-gray-300 hover:text-black"
+                }`}
+                aria-label={saved ? t(lang, "post_saved") : t(lang, "post_save")}
+              >
+                <Bookmark size={16} fill={saved ? "currentColor" : "none"} />
+                <span className="hidden sm:inline">{saved ? t(lang, "post_saved") : t(lang, "post_save")}</span>
+              </button>
+
+              {/* Share */}
               <button
                 type="button"
                 onClick={handleShareClick}
                 className="ml-auto px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors text-sm font-medium flex items-center gap-2"
               >
                 <Share2 size={16} />
-                Share {shareCount > 0 && `(${shareCount})`}
+                {t(lang, "post_share")} {shareCount > 0 && `(${shareCount})`}
               </button>
             </div>
 
@@ -213,7 +268,7 @@ export const PostDetail = () => {
             )}
           </div>
 
-          {/* Featured image - larger so infographics are readable */}
+          {/* Featured image */}
           <div className="mb-10 rounded-xl overflow-hidden border border-gray-200 bg-gray-50">
             <PostImage
               src={post.image}
@@ -223,10 +278,10 @@ export const PostDetail = () => {
             />
           </div>
 
-          {/* Article content - larger base font for readability */}
-          <article className="prose prose-gray prose-lg max-w-none mb-16 text-base sm:text-lg">
-            <div className="whitespace-pre-line text-gray-700 leading-relaxed">
-              {post.content}
+          {/* Article content */}
+          <article className="prose prose-gray prose-lg max-w-none mb-16 text-base sm:text-lg dark:prose-invert">
+            <div className="whitespace-pre-line text-gray-700 dark:text-[#c4c4c4] leading-relaxed">
+              {localizedPost!.content}
             </div>
           </article>
 
@@ -235,39 +290,40 @@ export const PostDetail = () => {
             comments={comments}
             loading={commentsLoading}
             onRefetch={refetchComments}
+            onSignUpRequired={openSignUp}
           />
 
-          {/* This Week's Big Ideas / More Research */}
-          <section className="border-t border-gray-100 pt-12">
-            <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 mb-6">
+          {/* More Research */}
+          <section className="border-t border-gray-100 dark:border-[#222222] pt-12">
+            <h2 className="flex items-center gap-2 text-xl font-bold text-gray-900 dark:text-[#ededed] mb-6">
               <Lightbulb size={22} className="text-amber-500" />
-              More Research
+              {t(lang, "post_more_research")}
             </h2>
-            <ul className="space-y-4">
-              {otherPosts.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    to={`/post/${p.id}`}
-                    className="flex items-start gap-3 group"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
-                      <PostImage
-                        src={p.image}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        referrerPolicy="no-referrer"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:underline">
-                        {p.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 line-clamp-1">{p.summary}</p>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+            <PostHoverPreview posts={otherPosts}>
+              {({ onMouseEnter, onMouseLeave, hoveredId }) => (
+                <ul className="space-y-4">
+                  {otherPosts.map((p) => (
+                    <li
+                      key={p.id}
+                      onMouseEnter={() => onMouseEnter(p.id)}
+                      onMouseLeave={onMouseLeave}
+                      className="transition-opacity duration-200"
+                      style={{ opacity: hoveredId !== null && hoveredId !== p.id ? 0.4 : 1 }}
+                    >
+                      <Link to={`/post/${p.id}`} className="flex items-start gap-3 group">
+                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 overflow-hidden">
+                          <PostImage src={p.image} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900 dark:text-[#ededed] group-hover:underline">{localizePost(p, lang).title}</h3>
+                          <p className="text-sm text-gray-500 dark:text-[#666666] line-clamp-1">{localizePost(p, lang).summary}</p>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </PostHoverPreview>
           </section>
         </div>
       </main>

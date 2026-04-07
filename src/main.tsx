@@ -9,12 +9,17 @@ import { About } from './pages/About.tsx';
 import { Subscribe } from './pages/Subscribe.tsx';
 import { AdminPosts } from './pages/admin/AdminPosts.tsx';
 import { AdminPostEditor } from './pages/admin/AdminPostEditor.tsx';
+import { AdminAnalytics } from './pages/admin/AdminAnalytics.tsx';
 import { Unsubscribe } from './pages/Unsubscribe.tsx';
 import { AuthProvider } from './providers/AuthProvider.tsx';
+import { ThemeProvider } from './providers/ThemeProvider.tsx';
+import { LanguageProvider } from './providers/LanguageProvider.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
+    <ThemeProvider>
+    <LanguageProvider>
     <AuthProvider>
       <BrowserRouter>
         <ScrollToTop />
@@ -25,10 +30,13 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/subscribe" element={<Subscribe />} />
           <Route path="/admin" element={<AdminPosts />} />
           <Route path="/admin/posts/:id" element={<AdminPostEditor />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/post/:id" element={<PostDetail />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </LanguageProvider>
+    </ThemeProvider>
   </StrictMode>,
 );

@@ -9,6 +9,9 @@ export interface Post {
   content: string;
   image: string;
   viewCount?: number;
+  title_uz?: string;
+  summary_uz?: string;
+  content_uz?: string;
   stats?: { label: string; value: string }[];
   engagement?: { likes: number; comments: number; reposts: number };
 }
