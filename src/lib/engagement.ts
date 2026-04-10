@@ -176,17 +176,21 @@ export function useShareCount(postId: string | undefined) {
 export function usePostCardEngagement(postId: string | undefined) {
   const [likeCount, setLikeCount] = React.useState(0);
   const [commentCount, setCommentCount] = React.useState(0);
+  const [viewCount, setViewCount] = React.useState<number | undefined>(undefined);
 
   React.useEffect(() => {
     if (!postId || !isDbPostId(postId) || !isSupabaseConfigured || !supabase) return;
     void Promise.all([
       supabase.from("post_likes").select("*", { count: "exact", head: true }).eq("post_id", postId),
       supabase.from("comments").select("*", { count: "exact", head: true }).eq("post_id", postId),
-    ]).then(([likesRes, commentsRes]) => {
+      supabase.from("posts").select("view_count").eq("id", postId).single(),
+    ]).then(([likesRes, commentsRes, viewRes]) => {
       setLikeCount(likesRes.count ?? 0);
       setCommentCount(commentsRes.count ?? 0);
+      const vc = (viewRes.data as { view_count?: number } | null)?.view_count;
+      if (typeof vc === "number") setViewCount(vc);
     });
   }, [postId]);
 
-  return { likeCount, commentCount };
+  return { likeCount, commentCount, viewCount };
 }

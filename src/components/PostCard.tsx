@@ -16,11 +16,11 @@ interface PostCardProps {
 }
 
 function EngagementCounts({ post }: { post: Post }) {
-  const { likeCount, commentCount } = usePostCardEngagement(
+  const { likeCount, commentCount, viewCount: liveViewCount } = usePostCardEngagement(
     isDbPostId(post.id) ? post.id : undefined
   );
 
-  const views = isDbPostId(post.id) ? (post.viewCount ?? 0) : (post.engagement?.likes ?? 0);
+  const views = isDbPostId(post.id) ? (liveViewCount ?? post.viewCount ?? 0) : (post.engagement?.likes ?? 0);
   const likes = isDbPostId(post.id) ? likeCount : (post.engagement?.likes ?? 0);
   const comments = isDbPostId(post.id) ? commentCount : (post.engagement?.comments ?? 0);
 
@@ -72,8 +72,8 @@ export const PostCard: React.FC<PostCardProps> = ({ post, index, dimmed = false 
 
         <div className="w-40 h-28 sm:w-52 sm:h-36 bg-gray-100 dark:bg-[#1e1e1e] rounded-lg overflow-hidden border border-gray-200 dark:border-[#262626] shrink-0">
           <PostImage
-            src={post.image}
-            alt={post.title}
+            src={localized.image}
+            alt={localized.title}
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
